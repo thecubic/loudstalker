@@ -19,17 +19,19 @@ use windows::Win32::{
         CLSCTX_ALL, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx,
     },
 };
-
-#[allow(non_camel_case_types)]
-#[windows::core::implement(IAudioEndpointVolumeCallback)]
-struct VolumeChangeCallback;
+use windows_core::implement;
 
 static MUTED: AtomicBool = AtomicBool::new(false);
 static VOL: AtomicI32 = AtomicI32::new(0);
 static MUTE_ENDPOINT: OnceLock<String> = OnceLock::new();
 static VOLCHANGE_ENDPOINT: OnceLock<String> = OnceLock::new();
 
-impl IAudioEndpointVolumeCallback_Impl for VolumeChangeCallback {
+#[allow(non_camel_case_types)]
+#[implement(IAudioEndpointVolumeCallback)]
+struct VolumeChangeCallback {}
+
+impl IAudioEndpointVolumeCallback_Impl for VolumeChangeCallback_Impl {
+    #[allow(non_snake_case)]
     fn OnNotify(
         &self,
         pnotify: *mut AUDIO_VOLUME_NOTIFICATION_DATA,
@@ -106,10 +108,7 @@ fn main() {
         ))
         .unwrap();
     unsafe {
-        CoInitializeEx(None, COINIT_MULTITHREADED).unwrap_or_else(|err| {
-            eprintln!("ERROR: Couldn't initialize windows connection: {err}");
-            exit(1);
-        });
+        CoInitializeEx(None, COINIT_MULTITHREADED).unwrap();
         log::debug!("initialized windows connection");
 
         let imm_device_enumerator: IMMDeviceEnumerator =
@@ -122,7 +121,6 @@ fn main() {
         log::debug!("got media device enumerator");
 
         let default_device = imm_device_enumerator
-            .clone()
             .GetDefaultAudioEndpoint(eRender, eMultimedia)
             .unwrap_or_else(|err| {
                 eprintln!("ERROR: Couldn't get Default audio endpoint {err}");
@@ -131,7 +129,6 @@ fn main() {
         log::debug!("got default audio endpoint");
 
         let simple_audio_volume: IAudioEndpointVolume = default_device
-            .clone()
             .Activate(CLSCTX_ALL, None)
             .unwrap_or_else(|err| {
                 eprintln!("ERROR: Couldn't get Endpoint volume control: {err}");
