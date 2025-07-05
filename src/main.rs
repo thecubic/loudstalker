@@ -144,7 +144,7 @@ fn main() {
                 exit(1);
             });
         log::debug!("set volume change callback");
+        log::info!("volume stalking started");
+        loop {}
     }
-    log::info!("volume stalking started");
-    loop {}
 }
